@@ -1,0 +1,174 @@
+---
+title: "Python backend: LCU, injection, and WebSocket bridge"
+description: "How Rose's Python backend connects to the League Client, injects skins, bridges plugins over WebSocket, and keeps itself up to date."
+---
+
+The Python backend is the core of Rose. It runs as a Windows process (started from `main.py`), connects to the League Client via the LCU API, listens to champion select events, injects encrypted skin files at game start, and exposes a local WebSocket server that the Pengu Loader JavaScript plugins use to report skin selections and receive state updates. Several daemon threads run alongside the main loop to handle phase monitoring, LCU reconnection, analytics, and WebSocket communication concurrently.
+
+## Project structure
+
+```
+Rose/
+├── main.py                     # Entry point
+├── config.py                   # All constants and tunable values
+├── main/                       # Lifecycle, threads, and signals
+├── lcu/                        # League Client API integration
+│   ├── core/
+│   │   ├── client.py           # LCU orchestrator
+│   │   ├── lcu_api.py          # GET / PUT / PATCH wrapper
+│   │   ├── lcu_connection.py   # Lockfile-based connection
+│   │   └── lockfile.py
+│   ├── data/                   # Skin scraper and cache
+│   └── features/               # Skin selection, game mode, Swiftplay
+├── injection/                  # Skin injection system
+│   ├── core/
+│   │   ├── manager.py          # Orchestrates injection lifecycle
+│   │   └── injector.py         # Runs mod-tools.exe
+│   ├── game/                   # Game process detection and monitoring
+│   ├── mods/                   # Mod extraction and management
+│   ├── overlay/                # mkoverlay / runoverlay process management
+│   └── tools/                  # mod-tools.exe availability check
+├── pengu/                      # WebSocket server and plugin bridge
+│   ├── core/
+│   │   ├── websocket_server.py # WebSocketServer class
+│   │   ├── skin_monitor.py     # PenguSkinMonitorThread
+│   │   └── http_handler.py
+│   ├── communication/          # Message handler and broadcaster
+│   └── processing/             # Skin processor and flow controller
+├── threads/                    # Background thread implementations
+├── state/core/shared_state.py  # SharedState dataclass
+├── launcher/                   # Startup, updates, and skin sync
+├── party/                      # Party mode — P2P skin sharing
+├── analytics/                  # Anonymous usage pings
+└── utils/                      # Logging, crypto, downloads, system
+```
+
+## Subsystems
+
+<AccordionGroup>
+  <Accordion title="LCU API integration">
+    Rose communicates with the League Client via the League Client Update (LCU) API — an authenticated HTTPS API served on `localhost` by the running client. The port and password are discovered by reading the League Client's **lockfile**, a small text file written to disk by the client on startup.
+
+    **Connection setup** (`lcu/core/lcu_connection.py`):
+
+    1. `LCUConnection` calls `find_lockfile()` to locate the lockfile path.
+    2. `parse_lockfile()` extracts the port and password.
+    3. A `requests.Session` is configured with `auth=("riot", password)` and SSL verification disabled — the League Client uses a self-signed certificate on `127.0.0.1`, which is standard across all LCU tools.
+    4. The base URL is set to `https://127.0.0.1:{port}`.
+
+    **Auto-reconnect**: every API call in `LCUAPI` checks `connection.ok` before issuing the request. On a `RequestException`, `refresh_if_needed(force=True)` is called to re-read the lockfile and rebuild the session. The `lcu_monitor_thread` also polls the lockfile mtime at 1 s intervals (`LCU_MONITOR_INTERVAL`) so the rest of the app stays aware of client restarts.
+
+    **API methods** (`lcu/core/lcu_api.py` — `LCUAPI` class):
+
+    | Method | HTTP verb | Usage |
+    |---|---|---|
+    | `get(path, timeout)` | GET | Phase polling, champion data, owned skins |
+    | `put(path, json_data, timeout)` | PUT | Writing skin selection to champion select |
+    | `patch(path, json_data, timeout)` | PATCH | Updating summoner selection state |
+
+    All methods retry once on failure after forcing a connection refresh. Timeout defaults come from `config.py` (`LCU_API_TIMEOUT_S = 2.0`).
+
+    The `LCU` class in `lcu/core/client.py` is the public façade used by the rest of the app. It composes `LCUConnection`, `LCUAPI`, and feature handlers (`LCUProperties`, `LCUSkinSelection`, `LCUGameMode`, `LCUSwiftplay`) into a single object.
+  </Accordion>
+
+  <Accordion title="Skin injection">
+    Skin injection turns an encrypted skin archive into a live overlay that League of Legends renders in place of the original assets. The system is split between two classes in `injection/core/`.
+
+    **`InjectionManager`** (`injection/core/manager.py`) is the high-level orchestrator:
+
+    - Lazily initialises `SkinInjector` on first use via `_ensure_initialized()`.
+    - Acquires `injection_lock` (a `threading.Lock`) before every injection to prevent concurrent runs.
+    - Enforces a configurable cooldown (`injection_threshold`) between injections.
+    - Starts `GameMonitor` to watch for the game process and optionally suspend it.
+    - Delegates the actual work to `SkinInjector.inject_skin()`.
+    - Stops `GameMonitor` and resumes the game process after injection completes.
+
+    **`SkinInjector`** (`injection/core/injector.py`) performs the injection:
+
+    1. Resolves the skin archive (`.zip`, `.fantome`, or `.rse`) via `ZipResolver` using fuzzy name matching.
+    2. Cleans the mods and overlay directories from any previous run.
+    3. Decrypts the archive in memory using the key fetched from the `rose-skin-key` Cloudflare Worker (`utils/crypto/`), then extracts it into the mods directory.
+    4. Calls `OverlayManager.mk_run_overlay()`, which runs `mod-tools.exe mkoverlay` followed by `mod-tools.exe runoverlay`. `mkoverlay` builds the overlay structure; `runoverlay` attaches it to the running game process.
+    5. Decrypted files are wiped from disk after extraction.
+
+    **Game suspension**: when `ENABLE_GAME_SUSPENSION = True` (the default, set in `config.py`), `GameMonitor` suspends the League of Legends process (`League of Legends.exe`) using the Win32 `NtSuspendProcess` call. This gives the overlay time to apply before the first frame is rendered. The game is resumed as soon as `runoverlay` is running.
+
+    <Warning>
+      `ENABLE_GAME_SUSPENSION` is a risk flag. Suspending a process can in theory be detected by kernel-level anti-cheat. It is enabled by default because it significantly improves injection reliability, but it can be disabled in `config.py` if needed.
+    </Warning>
+
+    Party member skins are injected in the same pass via the `extra_mods_callback` argument, which `PartyInjectionHook` populates when party mode is active.
+  </Accordion>
+
+  <Accordion title="WebSocket bridge">
+    The Python backend runs a local WebSocket server that the Pengu Loader plugins connect to. This bridge is the communication channel between the JavaScript UI layer and the Python injection layer.
+
+    **`WebSocketServer`** (`pengu/core/websocket_server.py`):
+
+    - Binds to `127.0.0.1` on a dynamically chosen free port starting at `50000` (matching the high-port convention used by the LCU API itself).
+    - Uses the `websockets` library with a dedicated `asyncio` event loop running on a daemon thread.
+    - Keeps a set of active `WebSocketServerProtocol` connections and exposes a `broadcast()` coroutine that fans a message out to all connected clients.
+    - Handles both WebSocket upgrades and plain HTTP requests on the same port (the HTTP side is used by plugins for feature discovery).
+    - Sends keepalive pings every 20 s (`ping_interval=20`) to survive AV or VPN software that might drop idle connections.
+
+    **`PenguSkinMonitorThread`** (`pengu/core/skin_monitor.py`) wraps `WebSocketServer` as a daemon thread:
+
+    - On startup, it calls `find_free_port(start_port=50000)` and writes the chosen port to a file on disk so plugins can discover it (`write_bridge_port()`).
+    - Incoming messages from plugins are routed through `MessageHandler`, which updates `SharedState` and triggers `Broadcaster` to push state back out to all connected plugins.
+    - `force_disconnect()` is called just before injection begins, cleanly closing plugin connections so they do not interfere with the game startup sequence.
+
+    **Message flow**:
+
+    ```
+    Plugin (JS)  →  ws://127.0.0.1:{port}  →  MessageHandler  →  SharedState
+    SharedState  →  Broadcaster             →  ws://127.0.0.1:{port}  →  Plugin (JS)
+    ```
+
+    Broadcast events include skin state changes, chroma selections, phase transitions, champion lock notifications, random mode state, and historic mode state.
+  </Accordion>
+
+  <Accordion title="Launcher and auto-updater">
+    Every time Rose starts, `run_launcher()` (`launcher/core/launcher.py`) runs a Win32 progress dialog through three sequential steps before the main application initialises.
+
+    **Step 1 — Update check** (`launcher/update/update_sequence.py`):
+
+    1. Queries the GitHub Releases API to compare the latest tag against `APP_VERSION` in `config.py`.
+    2. If a newer version is available, displays a prompt and downloads the installer.
+    3. Launches the installer via a batch file and calls `os._exit(0)` — the new process takes over.
+
+    GitHub API rate limiting is handled adaptively: `config.py` defines delay thresholds (`RATE_LIMIT_LOW_THRESHOLD`, `RATE_LIMIT_WARNING_50`, `RATE_LIMIT_WARNING_100`) and back-off multipliers that slow requests down as the remaining quota drops.
+
+    **Step 2 — Hash check** (`launcher/sequences/hash_check_sequence.py`):
+
+    Verifies the integrity of locally cached skin files against a manifest downloaded from the RoseSkin repository. Corrupted or missing archives are flagged for re-download.
+
+    **Step 3 — Skin sync** (`launcher/sequences/skin_sync_sequence.py`):
+
+    Downloads any skin archives that failed the hash check or are missing entirely. Downloads are streamed in chunks (`LOG_CHUNK_SIZE = 8192`) with a progress callback that drives the dialog's transfer indicator.
+
+    Once all three steps succeed, the dialog closes and the main application loop starts.
+  </Accordion>
+
+  <Accordion title="Analytics">
+    Rose includes an optional analytics subsystem that sends anonymous usage pings to `https://api.leagueunlocked.net/analytics/ping`.
+
+    **`AnalyticsClient`** (`analytics/core/analytics_client.py`) sends a POST request with:
+
+    ```json
+    {
+      "machine_id": "<Windows Machine GUID>",
+      "app_version": "1.2.6"
+    }
+    ```
+
+    The machine ID is the Windows **MachineGuid** registry value (`HKLM\SOFTWARE\Microsoft\Cryptography`), which is a per-installation random UUID. It does not identify the user personally.
+
+    **`analytics_thread`** (`analytics/core/analytics_thread.py`) runs the client in a daemon thread, sleeping for `ANALYTICS_PING_INTERVAL_S = 300` seconds (5 minutes) between pings. The thread checks `ANALYTICS_ENABLED` (default `True`) on every wake cycle, so analytics can be toggled at runtime by changing `config.py` without restarting.
+
+    The request uses a 30 s timeout (`ANALYTICS_TIMEOUT_S`) and fails silently — a network error or server outage is logged at `WARNING` level but does not affect Rose's operation.
+  </Accordion>
+</AccordionGroup>
+
+<Card title="Back to architecture overview" icon="map" href="/architecture/overview">
+  See how the Python backend fits alongside the Pengu plugins and Cloudflare Workers.
+</Card>

@@ -1,0 +1,158 @@
+---
+title: "Contributing to Rose: development setup and workflow"
+description: "How to contribute to Rose: report bugs, suggest features, set up a Python 3.11 conda dev environment, follow branch naming conventions, and run a build."
+---
+
+Contributions to Rose are welcome — whether you're fixing a bug, improving documentation, or proposing a new feature. The quickest ways to get involved are opening a GitHub Issue, joining the [Discord server](https://discord.com/invite/roseskins), or submitting a pull request. Every contribution helps keep Rose free and open for everyone.
+
+## Reporting bugs
+
+Open a [GitHub Issue](https://github.com/Alban1911/Rose/issues) with the following information:
+
+- Your Windows version and Rose version
+- Steps to reproduce the problem
+- What you expected to happen vs. what actually happened
+- Any relevant log output
+
+The clearer the report, the faster it can be triaged.
+
+## Suggesting features
+
+Feature requests are tracked through [GitHub Issues](https://github.com/Alban1911/Rose/issues). You can also discuss ideas with the community in the [Discord server](https://discord.com/invite/roseskins) before opening a formal request.
+
+## Dev environment setup
+
+<Steps>
+  <Step title="Create a conda environment with Python 3.11">
+    Rose requires Python 3.11. Create and activate a dedicated conda environment:
+
+    <CodeGroup>
+
+    ```powershell Create environment
+    conda create -n rose python=3.11 -y
+    ```
+
+    ```powershell Activate environment
+    conda activate rose
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Clone the repository">
+    ```powershell
+    git clone https://github.com/Alban1911/Rose.git
+    ```
+  </Step>
+
+  <Step title="Create a feature branch">
+    Work in a dedicated branch rather than directly on `main`. Follow the branch naming convention below:
+
+    ```powershell
+    git checkout -b feat/your-feature-name
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    From inside the `Rose` directory, install all required packages:
+
+    ```powershell
+    pip install -r requirements.txt
+    ```
+
+    Rose pins every dependency to a specific version to prevent supply chain attacks. Do not loosen the version constraints in `requirements.txt`.
+  </Step>
+
+  <Step title="Run the app for testing">
+    Rose must run as Administrator to inject skins and interact with the League Client:
+
+    ```powershell
+    # Right-click your terminal and choose "Run as Administrator", then:
+    python main.py
+    ```
+  </Step>
+</Steps>
+
+## Branch naming conventions
+
+Use the following prefixes when naming your branch. This keeps the pull request list scannable and makes automated tooling easier to maintain.
+
+| Prefix | Use for |
+|--------|---------|
+| `feat/` | New features or capabilities |
+| `fix/` | Bug fixes |
+| `docs/` | Documentation-only changes |
+
+Examples: `feat/skin-preview`, `fix/chroma-crash`, `docs/readme`.
+
+## Project structure
+
+The repository is organized into focused packages. Key directories are described below.
+
+```
+Rose/
+├── main.py                 # Application entry point
+├── config.py               # Global constants (version, timing, analytics)
+├── requirements.txt        # Pinned Python dependencies
+├── assets/                 # Icons, fonts, and images
+│
+├── main/                   # Core initialization and lifecycle
+├── injection/              # Skin injection system and game monitoring
+├── lcu/                    # League Client API integration
+├── threads/                # Background threads and event handlers
+├── utils/                  # Shared utilities (crypto, download, system)
+├── ui/                     # Chroma selector and skin display UI
+├── pengu/                  # Pengu Loader WebSocket server and plugins
+├── state/                  # Shared application state
+├── launcher/               # Auto-updater and launch sequences
+├── party/                  # Party mode (real-time skin sharing)
+├── analytics/              # Anonymous usage ping (background thread)
+│
+├── relay-worker/           # Cloudflare Worker — party WebSocket relay
+├── skin-key-worker/        # Cloudflare Worker — skin decryption key server
+│
+└── Pengu Loader/
+    ├── Pengu Loader.exe
+    └── plugins/            # JavaScript plugins (ROSE-UI, ROSE-SkinMonitor, …)
+```
+
+### Key directories at a glance
+
+- **`injection/`** — Manages game detection, skin file decryption, and the injection sequence via `mod-tools.exe`.
+- **`lcu/`** — Wraps the League Client Update (LCU) API; handles champion select phases and skin scraping.
+- **`threads/`** — Phase monitoring, champion lock detection, and the WebSocket event handler that connects the Python backend to Pengu plugins.
+- **`pengu/`** — Hosts the local WebSocket server that the JavaScript plugins connect to, and processes skin selection messages from the client.
+- **`party/`** — Implements the Cloudflare-relay–based real-time skin sharing system, including lobby matching and an XOR-cipher wire protocol.
+- **`analytics/`** — Sends periodic anonymous pings on a background thread. Machine identity is derived from the Windows Machine GUID; no personal data is collected.
+
+## Building
+
+The build system uses three Python scripts in the repository root:
+
+| Script | Purpose |
+|--------|---------|
+| `build_cython.py` | Compiles Python modules to C extensions with Cython |
+| `build_pyinstaller.py` | Bundles the application into a standalone executable with PyInstaller |
+| `build_all.py` | Runs the full build pipeline end to end |
+| `create_installer.py` | Packages the executable and assets into a Windows installer |
+
+Run the full build with:
+
+```powershell
+python build_all.py
+```
+
+<Note>
+  Building requires the conda environment to be active and all dependencies from `requirements.txt` installed, including `pyinstaller==6.3.0` and `cython==3.0.11`.
+</Note>
+
+## Support the project
+
+<CardGroup cols={2}>
+  <Card title="GitHub repository" icon="github" href="https://github.com/Alban1911/Rose">
+    Star the repo, open issues, and submit pull requests on GitHub
+  </Card>
+  <Card title="Support on Ko-Fi" icon="heart" href="https://ko-fi.com/roseapp">
+    Rose is free forever. If you'd like to support development, consider buying a coffee on Ko-Fi
+  </Card>
+</CardGroup>

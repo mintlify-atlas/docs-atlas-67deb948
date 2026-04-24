@@ -1,97 +1,65 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Rose — free skin changer for League of Legends"
+description: "Rose is a free, open-source skin changer for League of Legends. Unlock every skin in the game with zero competitive advantage and no gameplay impact."
 ---
 
-## Setting up
+Rose gives you access to every skin in League of Legends — for free. It runs silently in your system tray, detects your skin selection during champion select, and injects the chosen skin when the game starts. Built on the [Pengu Loader](https://github.com/Tariolle/ROSE-Pengu) framework, Rose modifies only local rendering variables and never touches network data, memory states, or gameplay mechanics.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Download the installer and get Rose running on Windows in minutes
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Learn how to select and inject your first skin step by step
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Core Features" icon="star" href="/features/skin-selection">
+    Explore chroma wheels, party mode, client customization, and more
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Configuration" icon="gear" href="/configuration/settings">
+    Customize injection timing, analytics, and per-champion settings
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## How Rose works
 
-Everything you need to create world-class documentation.
+<Steps>
+  <Step title="Download and install">
+    Grab the latest installer from [GitHub Releases](https://github.com/Alban1911/Rose/releases/latest) and run it as Administrator. Rose installs itself and registers a Start Menu shortcut.
+  </Step>
+  <Step title="Provide the injection DLL">
+    On first launch, Rose prompts you for a signed injection DLL. This file cannot be bundled due to DMCA restrictions — you must supply your own from an authorized source.
+  </Step>
+  <Step title="Launch Rose before League">
+    Start Rose from the Start Menu or system tray. It activates Pengu Loader automatically and waits for the League Client to open.
+  </Step>
+  <Step title="Pick your skin in champion select">
+    Hover over any skin in champion select. Rose detects your selection, lets you choose chromas or alternate forms, and injects the skin when the game loads.
+  </Step>
+</Steps>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+## Key features
 
-## Need inspiration?
+<CardGroup cols={2}>
+  <Card title="Smart injection" icon="shield-check" href="/features/skin-selection">
+    Rose never injects skins you already own — it only applies what you're missing
+  </Card>
+  <Card title="Chroma support" icon="palette" href="/features/chroma-support">
+    Choose any chroma variant from a custom wheel directly in champion select
+  </Card>
+  <Card title="Party mode" icon="users" href="/features/party-mode">
+    Share skin selections with friends in the same lobby in real time
+  </Card>
+  <Card title="Client customization" icon="brush" href="/features/client-customization">
+    Customize regalia borders, banners, icons, titles, and win/loss stats via ROSE-Jade
+  </Card>
+  <Card title="Historic & random skins" icon="shuffle" href="/features/historic-random">
+    Quickly re-apply your last-used skin or pick a random one for any champion
+  </Card>
+  <Card title="Auto-updater" icon="arrows-rotate" href="/installation">
+    Rose checks for updates on startup and installs them automatically with a progress dialog
+  </Card>
+</CardGroup>
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<Note>
+  Rose is completely free. If you paid for this software, you were scammed. Always download from the [official GitHub releases](https://github.com/Alban1911/Rose/releases/latest).
+</Note>

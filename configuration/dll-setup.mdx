@@ -1,0 +1,52 @@
+---
+title: "Set up the injection DLL required by Rose"
+description: "Rose cannot distribute the injection DLL due to DMCA restrictions. This page explains how to obtain, sign, and place the DLL so Rose can function."
+---
+
+Rose relies on an injection DLL to load custom skin files into the League of Legends game process. Because of DMCA restrictions, this DLL cannot be bundled with or distributed by Rose. You must obtain it independently from an authorized source and place it in the location Rose expects. This is a one-time setup — once the file is in place, Rose will use it automatically on every subsequent launch.
+
+<Info>
+  You only need to do this once. After you place the signed DLL in the correct folder, Rose will detect it on startup and proceed normally. You do not need to repeat this step after Rose updates.
+</Info>
+
+## Steps
+
+<Steps>
+  <Step title="Launch Rose for the first time">
+    Start Rose from the Start Menu or desktop shortcut. If the injection DLL is missing, Rose detects this automatically and shows a prompt explaining that the DLL is required.
+  </Step>
+  <Step title="Note the folder Rose opens">
+    Rose opens the folder in Windows Explorer where the DLL must be placed. Copy or note this path — you will need it in the next step.
+  </Step>
+  <Step title="Obtain a signed DLL from an authorized source">
+    Locate a copy of the injection DLL from an authorized source. The DLL must be signed with a valid code signing certificate. Rose does not accept unsigned DLLs.
+  </Step>
+  <Step title="Place the DLL in the folder">
+    Copy the signed DLL file into the folder that Rose opened. Do not rename the file — Rose expects a specific filename.
+  </Step>
+  <Step title="Restart Rose">
+    Close and relaunch Rose. It will detect the DLL automatically and continue with normal startup. If the prompt no longer appears, setup is complete.
+  </Step>
+</Steps>
+
+<Warning>
+  Do not obtain the injection DLL from unofficial or unverified sources. Unsigned or tampered DLLs from unauthorized distributors may contain malicious code and can compromise your system. Only use DLLs from sources you trust and that provide a valid code signing certificate.
+</Warning>
+
+## Troubleshooting
+
+If Rose continues to show the missing DLL prompt after you place the file:
+
+- Confirm the DLL is in the exact folder that Rose opened — not a subfolder or a different directory.
+- Confirm the DLL filename matches what Rose expects (check the prompt text).
+- Confirm the DLL is code-signed. Right-click the file in Windows Explorer, open **Properties**, and check the **Digital Signatures** tab.
+- Try running Rose as Administrator if you encounter permission errors writing to the folder.
+
+<CardGroup cols={2}>
+  <Card title="Settings" icon="gear" href="/configuration/settings">
+    Configure injection timing and other Rose preferences
+  </Card>
+  <Card title="Custom mods" icon="puzzle-piece" href="/configuration/custom-mods">
+    Add custom skin mods to the mods folder
+  </Card>
+</CardGroup>

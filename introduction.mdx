@@ -1,0 +1,61 @@
+---
+title: "Rose: automatic skin changer for League of Legends"
+description: "Rose unlocks every League of Legends skin for free. Runs in your tray, detects your champion select hover, and injects the chosen skin when the game starts."
+---
+
+Rose is a free, open-source skin changer for League of Legends that gives you access to every skin in the game. It runs silently in your system tray, detects the skin you hover in champion select, and injects it when the game loads — all without touching network data, memory states, or gameplay mechanics. Rose offers zero competitive advantage, and if you paid for it, you were scammed.
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Download the installer and get Rose running on Windows in minutes
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Select and inject your first skin step by step
+  </Card>
+  <Card title="Skin selection" icon="star" href="/features/skin-selection">
+    Learn how Rose detects and applies skins during champion select
+  </Card>
+  <Card title="Contributing" icon="code-pull-request" href="/contributing">
+    Set up a dev environment and submit pull requests
+  </Card>
+</CardGroup>
+
+## What Rose is
+
+Rose monitors the League Client via the League Client Update (LCU) API. When you hover a skin in champion select, a JavaScript plugin called ROSE-SkinMonitor sends the selection to Rose's Python backend over a WebSocket connection. Rose then decrypts the skin file at runtime, injects it when the game process starts, and wipes the decrypted data after use. The skin loads as if you owned it, with no impact on game behaviour or other players.
+
+Rose is built on the [Pengu Loader](https://github.com/Tariolle/ROSE-Pengu) framework, which injects a suite of JavaScript plugins into the League Client. These plugins unlock locked skin previews, display chroma and form selectors, surface a settings panel, and enable real-time skin sharing between friends in party mode.
+
+## Key features
+
+- **Smart injection** — Rose never injects skins you already own; it only applies what you're missing
+- **Chroma and forms support** — Choose any chroma variant or alternate form directly in champion select
+- **Party mode** — Share skin selections with friends in the same lobby in real time via a Cloudflare WebSocket relay
+- **Client customization** — Customize regalia borders, banners, icons, titles, and win/loss stats via the ROSE-Jade plugin
+- **Historic and random skins** — Quickly re-apply your last-used skin or pick a random one per champion
+- **Auto-updater** — On startup, Rose checks GitHub for new releases and installs updates automatically
+- **Multi-language support** — Works with any League Client language
+
+## Requirements
+
+- **Windows 10 or 11**
+- **League of Legends** installed on the same machine
+- **Injection DLL** — you must supply your own signed copy (see below)
+
+<Note>
+  Due to DMCA restrictions, Rose cannot distribute the injection DLL (`cslol-dll.dll`). You must obtain a signed copy from an authorized source yourself. On first launch, Rose detects that the file is missing, shows a dialog explaining where to place it, and opens the target folder automatically. Do not ask for this file on the Rose Discord — doing so will result in a permanent ban.
+</Note>
+
+## Architecture overview
+
+Rose is composed of three layers that work together:
+
+**Python backend** — The core application runs as a system tray process. It connects to the LCU API, manages a WebSocket server for plugin communication, handles skin downloads and decryption, runs the auto-updater, coordinates game monitoring, and orchestrates the injection pipeline.
+
+**Pengu Loader plugins** — A set of JavaScript plugins injected into the League Client handle all UI interactions: unlocking skin previews (ROSE-UI), monitoring selections (ROSE-SkinMonitor), providing chroma and form pickers (ROSE-ChromaWheel, ROSE-FormsWheel), exposing settings (ROSE-SettingsPanel), and enabling party mode (ROSE-PartyMode).
+
+**Cloudflare Workers** — Two workers support the backend: `rose-party-relay` is a Durable Object-backed WebSocket relay that manages party rooms for real-time skin sharing, and `rose-skin-key` serves the decryption key for skin files at runtime.
+
+## License
+
+Rose is released under the [MIT License](https://github.com/Alban1911/Rose/blob/main/LICENSE) and is fully open source. It is not endorsed by or affiliated with Riot Games.

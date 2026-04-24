@@ -1,0 +1,64 @@
+---
+title: "Apply custom skin mods with ROSE-CustomWheel"
+description: "Place custom skin mod files in the Rose mods folder to apply community-made or self-created skins directly from champion select via ROSE-CustomWheel."
+---
+
+Rose supports custom skin mods alongside its built-in skin library. A custom mod is a ZIP-format skin file (`.zip` or `.fantome`) that you place in the Rose mods folder. When you hover over a skin in champion select, the **ROSE-CustomWheel** plugin checks whether a mod exists for that skin and, if one is found, displays its metadata and gives you quick access to apply it.
+
+<Tip>
+  You can open the mods folder directly from champion select — **ROSE-CustomWheel** exposes a button to reveal the folder in Windows Explorer without leaving the client.
+</Tip>
+
+## How custom mods work
+
+When Rose injects a skin, the `ModManager` and `ZipResolver` components in the injection pipeline resolve any mod files present in the mods directory. Rose looks for files matching the selected champion and skin ID. If a matching mod is found, it is extracted and applied during injection instead of (or in addition to) the standard skin file.
+
+Extracted mod contents are hidden from the file system after extraction and are wiped after use — they are never left on disk between sessions.
+
+## Adding a custom mod
+
+<Steps>
+  <Step title="Locate the mods folder">
+    Open the Rose mods folder. You can find it by right-clicking the Rose tray icon and checking **Settings**, or by clicking the folder shortcut in **ROSE-CustomWheel** from within champion select.
+  </Step>
+  <Step title="Place your mod file">
+    Copy your custom mod file — a `.zip` or `.fantome` archive — into the mods folder. Do not place it in a subfolder; Rose expects mod files at the top level of the mods directory.
+  </Step>
+  <Step title="Hover the target skin in champion select">
+    Enter champion select and hover over the skin you want to apply the mod to. If **ROSE-CustomWheel** detects a matching mod file for that skin, it will display the mod's metadata in the wheel.
+  </Step>
+  <Step title="Select the skin">
+    Confirm your selection. Rose will apply the custom mod during injection when the game starts.
+  </Step>
+</Steps>
+
+## Supported file formats
+
+| Format | Notes |
+|---|---|
+| `.zip` | Standard ZIP archive containing skin asset files |
+| `.fantome` | Fantome mod format — ZIP-compatible, used by community skin tools |
+
+Rose does not support `.wad` files or loose asset folders placed directly in the mods directory.
+
+<Note>
+  Custom mods must be compatible with the current version of League of Legends. Mods built for an older game patch may cause visual glitches or fail to apply if the underlying asset paths have changed. Always use mods that have been updated for the current patch.
+</Note>
+
+## ROSE-CustomWheel
+
+**ROSE-CustomWheel** is the League Client plugin that surfaces custom mod information. When you hover a skin that has a matching mod in the mods folder, the wheel shows:
+
+- The mod name and any metadata embedded in the archive
+- A shortcut to open the mods folder in Windows Explorer
+
+If no mod is present for the hovered skin, **ROSE-CustomWheel** remains hidden.
+
+<CardGroup cols={2}>
+  <Card title="Settings" icon="gear" href="/configuration/settings">
+    Adjust injection timing and other Rose preferences
+  </Card>
+  <Card title="DLL setup" icon="file-code" href="/configuration/dll-setup">
+    Set up the injection DLL required for Rose to function
+  </Card>
+</CardGroup>

@@ -1,80 +1,65 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: "Quickstart: select and inject your first skin"
+description: "Learn the end-to-end flow: launch Rose, open League, hover a skin in champion select, pick a chroma, lock in, and watch the skin load when the game starts."
 ---
 
-## Get started in three steps
+This guide walks you through the complete flow from launching Rose to seeing your first injected skin in-game. The whole process takes place across two applications — Rose in your system tray and the League Client in champion select — and happens automatically once you're set up.
 
-Get your documentation site running locally and make your first customization.
+<Steps>
+  <Step title="Launch Rose">
+    Open Rose from the **Start Menu** shortcut or double-click the desktop icon. Rose runs a startup sequence: it checks for updates, verifies skin data, then minimizes to the **system tray**.
 
-### Step 1: Set up your local environment
+    Look for the Rose icon near the clock in the taskbar. A small colored dot on the icon shows Rose's current status — the dot turns green once Rose is connected to the League Client.
+  </Step>
+  <Step title="Open the League Client">
+    Start the League of Legends client normally. Rose detects the client automatically via the LCU API and activates Pengu Loader, which injects the Rose plugins into the client UI.
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    If the League Client was already open before you launched Rose, close it and reopen it so Pengu Loader can inject correctly.
+  </Step>
+  <Step title="Enter champion select">
+    Queue for any game mode and enter champion select. Once champion select loads, the ROSE-UI plugin unlocks the locked skin previews for your champion, so you can hover skins you don't own.
+  </Step>
+  <Step title="Hover a skin to select it">
+    Hover over any skin in the carousel. ROSE-SkinMonitor detects the hovered skin and sends its name to the Rose backend over a WebSocket connection. Rose confirms the selection and prepares the skin file for injection.
 
-### Step 2: Deploy your changes
+    <Note>
+      Rose never injects skins you already own. If you hover a skin in your collection, Rose skips injection for that skin — you'll load with your owned copy as normal.
+    </Note>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    You can change your selection freely throughout champion select — Rose tracks the last skin you hovered when the lock-in countdown reaches the injection threshold.
+  </Step>
+  <Step title="Choose a chroma (optional)">
+    If the skin has chromas, the **ChromaWheel** appears alongside the skin preview. Click any chroma swatch to select it. Rose records your chroma choice and applies it alongside the base skin at injection time.
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    For skins with multiple forms — such as Elementalist Lux or Spirit Blossom Morgana — the **FormsWheel** appears instead, letting you pick the form variant you want.
+  </Step>
+  <Step title="Lock in your champion">
+    Lock in as normal. As the champion select timer counts down to the finalization phase, Rose writes the skin selection to the League Client. At this point Rose also suspends the League game process briefly until the injection overlay has finished running — this ensures the skin has time to load before the game fully starts.
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    When the game launches, your selected skin loads as if you owned it.
+  </Step>
+</Steps>
 
-### Step 3: Go live
+## What happens during game launch
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+When champion select ends and the game process starts, Rose suspends the League game process until its injection overlay (`mkoverlay`) has completed. This suspension ensures the skin data is applied before the game engine begins loading assets. Once the overlay finishes, Rose resumes the game process automatically — this typically adds only a second or two to the loading screen.
 
-## Next steps
+<Tip>
+  The system tray icon's status dot reflects Rose's connection state throughout the session. If the dot goes grey during a game, it means Rose lost its connection to the League Client, which is normal during the in-game phase. Rose reconnects automatically when you return to the client after the game.
+</Tip>
 
-Now that you have your docs running, explore these key features:
+## What happens next
+
+Now that you have your first skin working, explore the rest of what Rose can do:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Chroma support" icon="palette" href="/features/chroma-support">
+    Learn how the ChromaWheel works and how to select chroma variants for any skin
+  </Card>
+  <Card title="Party mode" icon="users" href="/features/party-mode">
+    Share your skin selection with friends in the same lobby in real time
+  </Card>
+  <Card title="Historic & random skins" icon="shuffle" href="/features/historic-random">
+    Quickly re-apply your last-used skin or randomize your pick for any champion
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

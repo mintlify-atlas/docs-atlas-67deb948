@@ -1,0 +1,43 @@
+---
+title: "Customize the League Client with ROSE-Jade"
+description: "ROSE-Jade sets custom regalia borders, banners, summoner icons, and titles in the League Client. All changes are local only and invisible to other players."
+---
+
+**ROSE-Jade** is a Pengu Loader plugin that lets you change the visual appearance of your League Client profile and lobby. These are purely cosmetic adjustments to the client UI — they have no effect on gameplay, are not visible to other players, and do not interact with Rose's skin injection pipeline.
+
+<Note>
+All ROSE-Jade customizations are client-side only. Other players see your profile with your actual account data, not the customized values you have set.
+</Note>
+
+## Customization categories
+
+<CardGroup cols={2}>
+  <Card title="Regalia borders" icon="shield">
+    Change the decorative border displayed around your profile icon in lobbies and end-of-game screens.
+  </Card>
+  <Card title="Backgrounds" icon="image">
+    Set a custom background for your profile page, independent of the skins you own.
+  </Card>
+  <Card title="Banners" icon="flag">
+    Customize the banner displayed on your profile, including event and prestige banners.
+  </Card>
+  <Card title="Icons" icon="user">
+    Display any summoner icon on your profile without purchasing it.
+  </Card>
+  <Card title="Titles" icon="tag">
+    Apply any title to your display name in the client UI.
+  </Card>
+  <Card title="Win/loss stats" icon="chart-bar">
+    Adjust the win/loss counters shown on your profile. This affects only what you see locally.
+  </Card>
+</CardGroup>
+
+## Accessing ROSE-Jade
+
+Open the **ROSE-SettingsPanel** from within the League Client. The settings panel is accessible via the Rose entry in the client's plugin area. All ROSE-Jade options are grouped under the **Client customization** section.
+
+Changes take effect immediately without restarting the client. Because the modifications are applied by the JavaScript plugin layer on each client load, they reset to your actual account values whenever you restart the League Client without Rose running.
+
+## Distinction from skin injection
+
+ROSE-Jade operates entirely within the League Client interface and does not touch the game process. Skin injection (handled by the Python backend and the injection pipeline) applies to the in-game renderer when a match loads. The two systems are independent — you can use ROSE-Jade without ever entering a game, and skin injection works regardless of any ROSE-Jade settings you have configured.

@@ -1,0 +1,39 @@
+---
+title: "Last-used and random skin selection in Rose"
+description: "ROSE-HistoricMode re-applies your last-used skin per champion automatically. ROSE-RandomSkin picks a random skin on entry. Both work with chroma selection."
+---
+
+Rose includes two convenience features for skin selection that sit on top of the core injection pipeline: **ROSE-HistoricMode**, which re-applies the last skin you used for a given champion, and **ROSE-RandomSkin**, which picks a skin at random when you enter champion select. Both are accessible from the **ROSE-SettingsPanel** and from the overlay shown during champion select.
+
+## Historic mode
+
+**ROSE-HistoricMode** tracks the last skin — or chroma, or custom mod — injected for every champion you play. The data is stored in a `historic.json` file in your Rose user data directory, keyed by champion ID:
+
+```json
+{
+  "235": 235006,
+  "92": "path:skins/92/custom-riven-mod_1.0.0.fantome"
+}
+```
+
+Values are either integer skin or chroma IDs for official skins, or `path:`-prefixed strings for custom mod files. When a custom mod file is recorded, its relative path from the mods root is stored.
+
+When you lock a champion in champion select, Rose checks the historic map for that champion ID. If an entry exists, it is automatically applied as your skin selection — you do not need to hover the skin manually. The historic state resets when you lock a different champion or start a new champion select session, so switching champions mid-session works cleanly.
+
+Historic entries are updated on every successful injection, meaning the file always reflects the most recent skin you actually played, not just one you hovered.
+
+## Random skin
+
+**ROSE-RandomSkin** automatically selects a skin for your champion when you enter champion select. The random pick happens at the moment your champion is detected, before you have hovered anything manually, and the selected skin is treated identically to a manual hover — it flows through the same detection, ownership check, and injection pipeline.
+
+To use random skin selection, enable it in the **ROSE-SettingsPanel** or toggle it from the champion select overlay. You can also manually trigger a new random pick from within champion select if you want a different result.
+
+<Tip>
+Random skin selection works together with chroma support. If the randomly chosen skin has chromas available, the **ROSE-ChromaWheel** will appear and you can pick a specific chroma — or leave it on the base skin and let the game load without one.
+</Tip>
+
+## Using both features together
+
+Historic mode and random skin are independent toggles. If both are enabled, historic mode takes priority: if Rose has a recorded skin for your champion, it uses that rather than picking at random. Random skin only fires when there is no historic entry for the current champion.
+
+This means you can use random skin to discover skins on champions you do not frequently play, while historic mode ensures your main champions always load with your preferred skin automatically.

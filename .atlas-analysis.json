@@ -1,0 +1,89 @@
+{
+  "projectType": "saas",
+  "projectName": "Rose",
+  "projectDescription": "Rose is an open-source, automatic skin changer for League of Legends that seamlessly unlocks all skins via client-side asset injection without affecting gameplay.",
+  "theme": "almond",
+  "primaryColor": "#94cb04",
+  "lightColor": "#545454",
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/skin-selection",
+              "features/chroma-support",
+              "features/party-mode",
+              "features/client-customization",
+              "features/historic-random"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/settings",
+              "configuration/dll-setup",
+              "configuration/custom-mods"
+            ]
+          },
+          {
+            "group": "Architecture",
+            "pages": [
+              "architecture/overview",
+              "architecture/python-backend",
+              "architecture/pengu-plugins",
+              "architecture/cloudflare-workers"
+            ]
+          },
+          {
+            "group": "Contributing & Legal",
+            "pages": [
+              "contributing",
+              "legal"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Automatic skin injection via LCU API integration and Pengu Loader plugins",
+    "Full chroma variant selection with a custom ChromaWheel UI overlay",
+    "Party mode for real-time skin sharing between friends in the same lobby",
+    "Historic mode and random skin selection",
+    "Client customization (Jade): regalia borders, banners, icons, and win/loss stats",
+    "Smart injection that skips skins you already own",
+    "Auto-updater with progress dialog for seamless version upgrades",
+    "Encrypted skin files downloaded at runtime and wiped after use"
+  ],
+  "publicApiSurface": [
+    "main() — application entry point (main.py)",
+    "run_launcher(dev_mode, test_download_fail) — Win32 startup dialog and update/sync sequence (launcher/core/launcher.py)",
+    "ChromaSelector.show_button_for_skin(skin_id, skin_name, champion_name, champion_id) — chroma wheel display (ui/chroma/selector.py)",
+    "ChromaSelector.should_show_chroma_panel(skin_id) — chroma availability check (ui/chroma/selector.py)",
+    "WebSocketServer(host, port, message_handler, http_handler) — Pengu plugin bridge (pengu/core/websocket_server.py)",
+    "LCUAPI.get(path, timeout) — LCU HTTP GET (lcu/core/lcu_api.py)",
+    "LCUAPI.put(path, json_data, timeout, headers) — LCU HTTP PUT (lcu/core/lcu_api.py)",
+    "LCUAPI.patch(path, json_data, timeout) — LCU HTTP PATCH (lcu/core/lcu_api.py)",
+    "get_config_option(section, option, fallback) — config read (config.py)",
+    "set_config_option(section, option, value) — config write (config.py)",
+    "ROSE-UI plugin — unlocks skin previews in champion select",
+    "ROSE-SkinMonitor plugin — detects hovered skin and sends to backend",
+    "ROSE-ChromaWheel plugin — chroma selection UI",
+    "ROSE-FormsWheel plugin — multi-form skin selector",
+    "ROSE-PartyMode plugin — lobby/champion select party panel",
+    "ROSE-Jade plugin — client cosmetic customization",
+    "ROSE-SettingsPanel plugin — in-client settings UI"
+  ]
+}

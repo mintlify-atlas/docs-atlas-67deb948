@@ -1,0 +1,86 @@
+---
+title: "Rose architecture: how all components fit together"
+description: "A high-level map of how Rose's Python backend, Pengu Loader plugins, and Cloudflare Workers combine to deliver seamless skin injection."
+---
+
+Rose is built from three distinct layers that communicate with each other at runtime: a Python backend that owns the injection logic and application state, a set of JavaScript plugins loaded into the League Client by Pengu Loader, and two Cloudflare Workers that handle the party relay and skin decryption key. Understanding how these layers interact makes it much easier to navigate the codebase and contribute effectively.
+
+## Main components
+
+**Python backend** (`main.py` and supporting packages) is the heart of the application. It connects to the League Client via the LCU API, monitors game phases, triggers skin injection using mod-tools, and runs a local WebSocket server that the JavaScript plugins connect to. It also manages the auto-updater, skin downloads, and optional analytics.
+
+**Pengu Loader plugins** (JavaScript, under `Pengu Loader/plugins/`) extend the League Client's UI. Pengu Loader injects them into the client process on startup. Plugins detect skin hovers, render custom UI wheels, manage party panels, and send events back to the Python backend over WebSocket.
+
+**Cloudflare Workers** provide two serverless endpoints: `rose-party-relay` proxies real-time WebSocket messages between party members, and `rose-skin-key` serves the runtime decryption key used to unlock encrypted skin files.
+
+## End-to-end skin injection flow
+
+<Steps>
+  <Step title="Startup">
+    Rose launches and calls `run_launcher()`, which checks GitHub for updates, verifies local skin hashes, and downloads any missing skin archives. Pengu Loader is activated, injecting the JavaScript plugins into the League Client.
+  </Step>
+  <Step title="Champion select opens">
+    The `phase_thread` detects the `ChampSelect` phase via the LCU API. The `champ_thread` begins polling champion state, and the WebSocket bridge is ready for plugin messages.
+  </Step>
+  <Step title="Skin hover detected">
+    The `ROSE-SkinMonitor` plugin observes the hovered skin in the League Client UI and sends its name to the Python backend over the local WebSocket connection (`ws://127.0.0.1:{port}`).
+  </Step>
+  <Step title="State updated">
+    The Python backend receives the WebSocket message and updates `SharedState` fields such as `last_hovered_skin_key` and `last_hovered_skin_id`. Other threads read from `SharedState` to coordinate timing.
+  </Step>
+  <Step title="Champion locked">
+    When the local player locks in, the `FINALIZATION` phase begins the loadout countdown. The `InjectionManager` is notified and prepares for injection.
+  </Step>
+  <Step title="Game process suspended">
+    If `ENABLE_GAME_SUSPENSION` is set, the `GameMonitor` suspends the League of Legends game process. This ensures the overlay has time to apply before the game renders the first frame.
+  </Step>
+  <Step title="Skin injected">
+    `SkinInjector` decrypts the encrypted skin archive (fetching the key from `rose-skin-key`), extracts it into the mods directory, and runs `mod-tools.exe` (`mkoverlay` then `runoverlay`) to apply the skin overlay. The decrypted files are wiped after use.
+  </Step>
+  <Step title="Game resumes">
+    Once the overlay process is running, the game process is resumed and the skin loads as if you owned it.
+  </Step>
+</Steps>
+
+## Shared state model
+
+All background threads share a single `SharedState` instance defined in `state/core/shared_state.py`. It is a plain Python dataclass — no message queues or event bus — so every thread can read and write fields directly. Mutable fields that require ordering (such as the loadout timer) are protected with a `threading.Lock` stored on the dataclass itself (`timer_lock`, `swiftplay_lock`).
+
+Key fields include:
+
+| Field | Purpose |
+|---|---|
+| `phase` | Current LCU gameflow phase (e.g., `ChampSelect`, `InProgress`) |
+| `last_hovered_skin_key` | Skin key sent by the `ROSE-SkinMonitor` plugin |
+| `selected_chroma_id` | Chroma variant chosen via `ROSE-ChromaWheel` |
+| `loadout_countdown_active` | Whether the pre-game countdown is running |
+| `party_mode_enabled` | Whether party mode is active |
+| `stop` | Global shutdown flag read by all threads |
+
+## Thread model
+
+Rose uses a main thread plus several background daemon threads, each owning a distinct responsibility:
+
+| Thread | Module | Role |
+|---|---|---|
+| `phase_thread` | `threads/core/phase_thread.py` | Polls the LCU gameflow phase every 0.5 s (2 s in-game) |
+| `lcu_monitor_thread` | `threads/core/lcu_monitor_thread.py` | Monitors the LCU connection and reconnects on failure |
+| `websocket_thread` (`PenguSkinMonitor`) | `pengu/core/skin_monitor.py` | Hosts the local WebSocket server for plugin communication |
+| `analytics_thread` | `analytics/core/analytics_thread.py` | Sends periodic pings every 300 s |
+| `champ_thread` | `threads/handlers/champ_thread.py` | Polls champion select state at 0.25 s intervals |
+
+All intervals are defined as constants in `config.py` so they can be tuned without touching business logic.
+
+## Detailed architecture pages
+
+<CardGroup cols={3}>
+  <Card title="Python backend" icon="python" href="/architecture/python-backend">
+    LCU integration, skin injection, WebSocket bridge, auto-updater, and analytics.
+  </Card>
+  <Card title="Pengu Loader plugins" icon="puzzle" href="/architecture/pengu-plugins">
+    JavaScript plugins injected into the League Client for UI extensions and skin monitoring.
+  </Card>
+  <Card title="Cloudflare Workers" icon="cloud" href="/architecture/cloudflare-workers">
+    Party relay Durable Object and the skin decryption key server.
+  </Card>
+</CardGroup>

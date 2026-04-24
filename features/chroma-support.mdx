@@ -1,0 +1,58 @@
+---
+title: "Chroma variants and alternate form selection"
+description: "Pick any chroma or alternate form in champion select using ROSE-ChromaWheel and ROSE-FormsWheel. Covers Elementalist Lux, Viego, KDA Seraphine, and more."
+---
+
+When you hover a skin that has chroma variants or alternate forms, Rose surfaces a selection interface directly inside champion select — no separate window, no confirmation dialogs. Clicking a chroma or form updates the active selection instantly, and the injection pipeline uses whichever variant you last chose.
+
+## Chroma wheel
+
+The **ROSE-ChromaWheel** plugin activates automatically as soon as Rose detects you are hovering a skin that has at least one chroma. It presents all available chroma variants in a compact wheel overlaid on the champion select UI.
+
+- Owned chromas are marked and always available at no cost since you already purchased them.
+- Unowned chromas are equally available and will be injected alongside the base skin if selected.
+- Clicking any chroma updates `state.last_hovered_skin_id` immediately — there is no confirmation step. The state change is broadcast to the Python backend over the local WebSocket connection so the injection pipeline always has the latest selection.
+- Switching to a different base skin hides the chroma wheel and resets the chroma selection for that skin.
+
+<Note>
+"Owned" in this context refers to whether the chroma appears in your League account's purchased content, as reported by the LCU API. Unowned chromas work identically — the distinction only affects the visual marker shown in the wheel.
+</Note>
+
+## Alternate form selection
+
+Some skins ship with multiple distinct forms that function as alternate model variants rather than color recolors. These use the **ROSE-FormsWheel** plugin, which presents the same wheel-style interface with form names instead of color swatches.
+
+<AccordionGroup>
+  <Accordion title="Elementalist Lux">
+    Base skin ID `99007`. Rose assigns nine form IDs (`99991`–`99999`) for each element: **Air**, **Dark**, **Ice**, **Magma**, **Mystic**, **Nature**, **Storm**, **Water**, and **Fire**. These IDs are Rose-internal — they do not exist in Riot's skin data.
+  </Accordion>
+  <Accordion title="Sahn Uzal Mordekaiser">
+    Base skin ID `82054`. Two alternate forms are available: **Form 1** (`82998`) and **Form 2** (`82999`).
+  </Accordion>
+  <Accordion title="Spirit Blossom Morgana">
+    Base skin ID `25080`. One alternate form is available: **Form 1** (`25999`).
+  </Accordion>
+  <Accordion title="Radiant Sett">
+    Base skin ID `875066`. Two alternate forms are available: **Form 2** (`875998`) and **Form 3** (`875999`).
+  </Accordion>
+  <Accordion title="KDA Seraphine">
+    Base skin ID `147001`. Two alternate forms are available: **Form 1** (`147002`) and **Form 2** (`147003`).
+  </Accordion>
+  <Accordion title="Viego">
+    Base skin ID `234043`. Six alternate forms are available: **Form 2** through **Form 7** (`234994`–`234999`).
+  </Accordion>
+  <Accordion title="Risen Legend Kai'Sa and Risen Legend Ahri">
+    These skins use Hall of Legends chromas as alternate variants. **Risen Legend Kai'Sa** (base `145070`) has the **Immortalized Legend** chroma (`145071`). **Risen Legend Ahri** (base `103085`) has **Immortalized Legend** (`103086`) and a second form (`103087`).
+  </Accordion>
+</AccordionGroup>
+
+When you hover any alternate form, Rose maps the form ID back to the correct base skin so that chroma data is always fetched from the right source. Selecting a chroma while on an alternate form of a skin preserves the selection — switching between forms of the same base skin does not reset the active chroma.
+
+## How the two plugins differ
+
+| Plugin | Purpose | Activated by |
+|---|---|---|
+| **ROSE-ChromaWheel** | Color recolor variants for standard skins | Any skin with one or more chromas |
+| **ROSE-FormsWheel** | Distinct model variants for special skins | Elementalist Lux, Sahn Uzal Mordekaiser, Spirit Blossom Morgana, Radiant Sett, KDA Seraphine, Viego, Risen Legend skins |
+
+Both plugins communicate with the same Python backend over the local WebSocket bridge. The injection pipeline reads whichever chroma or form ID is stored in the shared application state at the moment of injection.

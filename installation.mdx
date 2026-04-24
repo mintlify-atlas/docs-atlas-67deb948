@@ -1,0 +1,61 @@
+---
+title: "Install Rose on Windows 10 or 11"
+description: "Install Rose on Windows: download the installer, run as Administrator, supply the injection DLL on first launch, and confirm Rose appears in the system tray."
+---
+
+Installing Rose takes a few minutes. You download a single installer from GitHub Releases, run it as Administrator, and supply the injection DLL that Rose requires on first launch. Once the tray icon appears, Rose is ready to use.
+
+## Requirements
+
+- **Windows 10 or 11**
+- **League of Legends** installed on the same machine
+- **Injection DLL** (`cslol-dll.dll`) — a signed copy you obtain from an authorized source
+
+<Note>
+  Due to DMCA restrictions, Rose cannot bundle or distribute `cslol-dll.dll`. You must obtain a signed copy yourself from an authorized source. Do not ask for this file on the Rose Discord — sharing or requesting it there results in a permanent ban. See [DLL setup](/configuration/dll-setup) for full details.
+</Note>
+
+## Installation steps
+
+<Steps>
+  <Step title="Download the installer">
+    Go to the [Rose GitHub Releases](https://github.com/Alban1911/Rose/releases/latest) page and download the latest installer. The current release is **version 1.2.6**.
+
+    Always download from the official GitHub repository. Rose is free — if you paid for it anywhere, you were scammed.
+  </Step>
+  <Step title="Run as Administrator">
+    Right-click the installer and select **Run as administrator**. Administrator privileges are required to register Rose and install Pengu Loader correctly.
+
+    Follow the installer prompts. Rose registers a **Start Menu** shortcut and a desktop shortcut automatically.
+  </Step>
+  <Step title="Provide the injection DLL on first launch">
+    When you start Rose for the first time, it checks for `cslol-dll.dll` in the injection tools folder. If the file is missing, Rose shows a dialog explaining the DMCA restriction and opens the target folder in Windows Explorer.
+
+    Copy your signed `cslol-dll.dll` into the folder that Rose opens, then launch Rose again. If the file is present but not recognized (wrong hash), Rose shows a separate warning — replace the file with the correct version.
+  </Step>
+  <Step title="Verify Rose is running in the system tray">
+    After the startup checks complete, Rose minimizes to the **system tray** — look for the Rose icon near the clock in the taskbar. A small status dot on the icon shows whether Rose is connected to the League Client.
+
+    If the tray icon does not appear, check that you ran the installer as Administrator and that the DLL is in the correct folder.
+  </Step>
+</Steps>
+
+## Auto-updater
+
+Every time Rose starts, it contacts GitHub to check for a new release. If an update is available, a lightweight startup dialog appears and shows download progress. Rose downloads the update, extracts it, and launches a standalone updater that applies the files while the main process exits. Rose then restarts automatically into the new version.
+
+<Tip>
+  You do not need to uninstall or reinstall Rose to update it — the auto-updater handles everything. If an update fails, Rose retries up to three times before skipping that release.
+</Tip>
+
+During startup the dialog also verifies local skin data and downloads any missing content before the main application launches.
+
+## Launch order
+
+<Tip>
+  Start Rose before opening the League Client. Rose activates Pengu Loader on startup, which must inject into the client process before the client fully loads. If you open the League Client first, restart it after Rose is running.
+</Tip>
+
+## Uninstalling Rose
+
+Use **Add or remove programs** in Windows **Settings** and search for Rose. The uninstaller removes Rose and its shortcuts. Your configuration file and logs in `%LOCALAPPDATA%\Rose\` are not removed automatically.

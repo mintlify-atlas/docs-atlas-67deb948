@@ -1,0 +1,42 @@
+---
+title: "Skin selection and automatic injection in Rose"
+description: "How Rose detects skin hovers, checks account ownership, decrypts archives at runtime, and injects them at game start. Skins you already own are never injected."
+---
+
+Rose works entirely within the League Client and game process. There are no clicks to confirm, no manual steps between champion select and the game, and no modifications to any network packets. When you hover a skin in champion select, Rose handles everything automatically from detection through injection.
+
+## Detection and injection flow
+
+<Steps>
+  <Step title="Hover a skin in champion select">
+    Browse skins normally in champion select. **ROSE-UI** unlocks the preview interaction so you can hover any skin, including those you do not own. The skin tile shows a golden border and lock icon for unowned skins.
+  </Step>
+  <Step title="ROSE-SkinMonitor detects your selection">
+    As soon as you hover a skin, **ROSE-SkinMonitor** reads the skin name from the client UI and sends it to the Python backend over a local WebSocket connection. Detection happens in real time — no confirmation is needed.
+  </Step>
+  <Step title="Python backend resolves the skin ID">
+    The backend receives the skin name and resolves it to an internal skin ID using the LCU API. Fuzzy matching handles minor naming differences and works regardless of your client language.
+  </Step>
+  <Step title="Smart ownership check">
+    Rose queries your account's owned skin list through the LCU API. If you already own the selected skin, no injection is performed — the game loads it through the normal client path. Only unowned skins go through the injection pipeline.
+  </Step>
+  <Step title="Game process suspension">
+    When the champion select countdown reaches the **FINALIZATION** phase and the game process starts, Rose suspends the League of Legends game process briefly. This pause ensures the overlay initializer has time to run before any rendering begins, guaranteeing the skin assets are in place before the game draws its first frame. A 20-second safety timeout (`PERSISTENT_MONITOR_AUTO_RESUME_S`) automatically resumes the process if anything goes wrong.
+  </Step>
+  <Step title="Skin file download and decryption">
+    Rose downloads the required skin file in encrypted form from the RoseSkin repository. The decryption key is fetched at runtime from the **rose-skin-key** Cloudflare Worker. The file is decrypted in memory and written to disk only for the duration of the injection.
+  </Step>
+  <Step title="Injection and cleanup">
+    The skin is injected into the game process. Once injection completes, Rose resumes the game and immediately wipes the decrypted skin file from disk. The game continues loading normally and the skin appears as if you owned it.
+  </Step>
+</Steps>
+
+## Smart injection
+
+Rose checks your owned skin list before injecting anything. Skins you have purchased are never injected — they load through Riot's own path, which means there is no performance overhead and no risk of a conflict with a skin you already own. Only skins absent from your account trigger the download and injection pipeline.
+
+Multi-language support is built into the skin name resolution step. The LCU API returns skin data in your account's language, and Rose normalizes it internally, so the detection and matching work correctly regardless of which client language you use.
+
+<Info>
+Rose modifies only local rendering variables — the model and texture loaded by your own game client. It sends no data to Riot's servers and does not alter any network packets, game memory states, or gameplay mechanics. Other players see your champion with whichever skin they have set on their end. Rose provides zero competitive advantage.
+</Info>

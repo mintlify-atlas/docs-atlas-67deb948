@@ -1,0 +1,69 @@
+---
+title: "Rose settings: injection timing, analytics, and paths"
+description: "Configure Rose's injection timing, analytics, and download behavior via the tray Settings dialog and the ROSE-SettingsPanel plugin inside the League Client."
+---
+
+Rose stores all persistent settings in a `config.ini` file located in the user data directory. You can manage these settings in two places: right-clicking the Rose tray icon opens the **Settings** dialog, and the **ROSE-SettingsPanel** plugin gives you access to settings directly from within the League Client during champion select or lobby.
+
+<Note>
+  The `config.ini` file lives in your user data directory: `%LOCALAPPDATA%\Rose\config.ini`. Rose reads it on startup and reloads relevant values like the injection threshold at runtime — no restart required for timing changes.
+</Note>
+
+## System tray settings
+
+Right-clicking the Rose tray icon reveals a context menu with **Settings** and **Quit**. Clicking **Settings** opens a native Windows dialog where you can configure:
+
+- **Injection threshold** — a slider (0.30 s to 2.00 s) controlling how early before the loadout timer expires Rose writes the selected skin
+- **Start automatically with Windows** — registers or removes a Windows autostart entry (requires Administrator rights)
+- **League of Legends game path** — the path to the directory containing `League of Legends.exe`; leave blank to use auto-detection
+
+Changes take effect immediately without restarting Rose.
+
+## ROSE-SettingsPanel
+
+**ROSE-SettingsPanel** is a JavaScript plugin injected into the League Client via Pengu Loader. It adds a settings panel accessible from inside the client, letting you adjust Rose preferences without leaving champion select or the lobby.
+
+## Key settings reference
+
+| Setting | Default | Description |
+|---|---|---|
+| `injection_threshold` | `0.50 s` | Seconds before the loadout timer ends that Rose writes the skin to the LCU. Adjustable from 0.30 s to 2.00 s via the tray **Settings** dialog. |
+| `SKIN_THRESHOLD_MS_DEFAULT` | `300 ms` | Code-level default (300 ms) for the time before the loadout ends to write the skin. The tray slider overrides this at runtime. |
+| `TIMER_HZ_DEFAULT` | `1000 Hz` | Frequency at which the in-client countdown timer updates. Valid range: `TIMER_HZ_MIN` (10 Hz) to `TIMER_HZ_MAX` (2000 Hz). |
+| `DEFAULT_DOWNLOAD_SKINS` | `true` | Whether Rose automatically downloads skin files on startup. |
+| `DEFAULT_VERBOSE` | `true` | Enables verbose logging to the log file. Disable if you want quieter output. |
+| `ENABLE_GAME_SUSPENSION` | `true` | Suspends the League of Legends game process during injection to ensure the skin loads correctly. See the warning below. |
+
+<Warning>
+  `ENABLE_GAME_SUSPENSION` briefly pauses the game process to give the injection overlay time to run. While this is required for reliable skin injection, it may interact with anti-cheat software. This flag is intended for advanced users and is enabled by default.
+</Warning>
+
+## Injection timing
+
+Rose uses a countdown timer synchronized with the League Client's loadout timer. When the countdown reaches the injection threshold, Rose writes the selected skin.
+
+- **`SKIN_THRESHOLD_MS_DEFAULT`** (`300 ms`) — the default lead time before the loadout ends. Increase this value if skins are not applying in time; decrease it to inject closer to the last moment.
+- **`TIMER_HZ_DEFAULT`** (`1000 Hz`) — how often the countdown timer refreshes per second. Higher values give smoother feedback in the UI but use more CPU. Values outside 10–2000 Hz are clamped.
+- The loadout timer only starts during the **FINALIZATION** phase (the final countdown before game start), not during earlier ban phases.
+
+## Analytics
+
+Rose sends a periodic ping every 5 minutes to `https://api.leagueunlocked.net/analytics/ping` to count unique active users. The ping uses a machine GUID derived from Windows registry and contains no personally identifiable information.
+
+Analytics are **enabled by default** (`ANALYTICS_ENABLED = True`). To disable them, set the following in `config.ini`:
+
+```ini config.ini
+[Analytics]
+enabled = false
+```
+
+Alternatively, you can set `ANALYTICS_ENABLED = False` in `config.py` if you are running Rose from source.
+
+<CardGroup cols={2}>
+  <Card title="DLL setup" icon="file-code" href="/configuration/dll-setup">
+    Set up the injection DLL required for Rose to function
+  </Card>
+  <Card title="Custom mods" icon="puzzle-piece" href="/configuration/custom-mods">
+    Add your own custom skin mods to the mods folder
+  </Card>
+</CardGroup>

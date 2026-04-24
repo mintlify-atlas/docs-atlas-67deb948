@@ -1,0 +1,47 @@
+---
+title: "Party mode: share skins with friends"
+description: "Share skin picks with friends in real time. Rose connects party members via a Cloudflare WebSocket relay, supporting up to 10 people per room with live updates."
+---
+
+Party mode lets you and your friends share skin selections with each other during lobby and champion select. Each person in the party sees everyone else's choices update in real time — including chroma selections. The feature is entirely opt-in and works on top of Rose's normal injection pipeline.
+
+<Tip>
+Enable party mode before entering a lobby. The **ROSE-PartyMode** panel is available from within lobby and champion select, but connecting to the relay room before teammates arrive ensures everyone is visible from the moment they join.
+</Tip>
+
+## How it works
+
+Rose uses a **Cloudflare Durable Object** WebSocket relay called **rose-party-relay** to broadcast skin selections between party members. Each party room is identified by a room key derived from the host's summoner ID and a randomly generated encryption key. Members connect to the same relay room and the Worker pushes the full member list — including each person's current skin pick — to every connected client whenever anything changes.
+
+The skin broadcast loop runs on a one-second interval (`SKIN_BROADCAST_INTERVAL = 1.0`). Whenever your hovered skin ID, selected chroma ID, or custom mod changes, the updated selection is sent to the relay room via `send_skin`. Custom mod selections are shared as a SHA-256 content hash (first 16 hex characters) rather than a file path, so your local file paths are never exposed.
+
+A keepalive ping fires every 25 seconds (`PING_INTERVAL = 25.0`) to maintain the WebSocket connection through idle periods.
+
+<Note>
+Each relay room holds a maximum of **10 members**. If your group is larger, you will need to split across multiple party rooms.
+</Note>
+
+## Setting up a party
+
+<Steps>
+  <Step title="Enable party mode">
+    Open the **ROSE-SettingsPanel** from within the League Client and toggle **Party mode** on. Rose generates a party token — a short encoded string containing your summoner ID and an encrypted key — and connects to a relay room keyed to your account.
+  </Step>
+  <Step title="Share your token with friends">
+    Copy your party token from the **ROSE-PartyMode** panel and send it to everyone you want in the party. Each friend pastes your token into their own **ROSE-PartyMode** panel. Rose decodes the token, derives the target room key, disconnects from their own room, and joins yours.
+  </Step>
+  <Step title="Everyone enters the lobby">
+    Once all friends have joined your relay room, enter a lobby together. The **ROSE-PartyMode** panel shows connected peers and their current skin selections, updated in real time as people hover skins in champion select.
+  </Step>
+  <Step title="Play normally">
+    Each player's Rose installation handles injection independently. When the game starts, every player injects their own selected skin locally. Party mode only coordinates the display of selections — it does not centralize injection.
+  </Step>
+</Steps>
+
+## Security and protocol
+
+Party tokens encode your summoner ID and a randomly generated 32-byte key. The encryption layer uses an XOR cipher with a per-message nonce and a keyed checksum to provide basic tamper detection. Tokens carry an expiry time; if a token has expired, Rose displays a prompt to request a fresh one.
+
+The relay itself is stateless from Rose's perspective — the Durable Object only stores the current member list for the duration of the room's lifetime. When all members disconnect, the room is cleaned up automatically.
+
+Lobby membership is cross-referenced against the LCU API every two seconds (`LOBBY_CHECK_INTERVAL = 2.0`) to track which party peers are actually in your current lobby and which are connected remotely.

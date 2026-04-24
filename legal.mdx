@@ -1,0 +1,94 @@
+---
+title: "License, Riot Games disclaimer, and legal notices"
+description: "MIT license, Riot Games trademark disclaimer, Terms of Service notes, DMCA restrictions on the injection DLL, and analytics disclosure for Rose."
+---
+
+Rose is free, open-source software released under the MIT License. It is not affiliated with or endorsed by Riot Games. Custom skins are permitted under Riot's Terms of Service and provide no competitive advantage — Rose modifies only local rendering variables and never touches network data, memory states, or gameplay mechanics.
+
+<Warning>
+  Use Rose at your own risk. While custom skins are allowed under Riot's Terms of Service and are not detected, Riot Games may change its policies at any time. Do not discuss or advertise skin tools in game chat.
+</Warning>
+
+## License
+
+Rose is published under the **MIT License** (© 2026 Alban and Florent). You are free to use, copy, modify, merge, publish, distribute, sublicense, and sell copies of the software, provided that the original copyright notice and permission notice are included in all copies or substantial portions of the software.
+
+The software is provided **"as is"**, without warranty of any kind. The authors are not liable for any claim, damages, or other liability arising from its use.
+
+Full license text:
+
+```text
+MIT License
+
+Copyright (c) 2026 Alban and Florent
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## Riot Games disclaimer
+
+Rose is an independent, community-developed project. It is **not endorsed by, affiliated with, sponsored by, or approved by Riot Games**.
+
+Riot Games, League of Legends, and all related names, logos, and properties are trademarks or registered trademarks of Riot Games, Inc. All such trademarks are the property of their respective owners and are used here solely for descriptive purposes.
+
+## Terms of service note
+
+Custom skins are explicitly allowed under Riot Games' Terms of Service. They are client-side only and are not detected by Vanguard or Riot's anti-cheat systems.
+
+**Guidelines you should follow:**
+
+- Do not discuss or advertise skin-changing tools in game chat or post-game lobbies.
+- Do not stream or publicly display Rose in a way that violates Riot's content policies.
+- Riot Games may update its Terms of Service at any time. Always verify the current policy before use.
+
+<Warning>
+  Proceeding with Rose means you accept full responsibility for any consequences related to your account. The authors provide no guarantee of safety or continued compatibility.
+</Warning>
+
+## DMCA and the injection DLL
+
+Rose **cannot distribute the injection DLL** due to DMCA restrictions. You must obtain this file yourself from an authorized source and sign it with your own code signing certificate.
+
+On first launch, Rose detects that the DLL is missing and prompts you to place it in the correct folder. See [DLL setup](/configuration/dll-setup) for details.
+
+## No competitive advantage
+
+Rose strictly modifies **local rendering variables** — the models and textures your own client displays. It does not:
+
+- Manipulate network packets or game server data
+- Read or write game memory states
+- Alter gameplay mechanics, hitboxes, or any stat
+- Provide information unavailable to other players
+
+Rose is designed to give zero competitive advantage. This is a core design constraint, not an afterthought.
+
+## Analytics disclosure
+
+Rose collects **anonymous, aggregate usage data** to help the maintainers understand how many unique users are active. Specifically:
+
+- A periodic ping is sent every 5 minutes to the analytics server at `api.leagueunlocked.net`.
+- The machine identifier is derived from the **Windows Machine GUID** — a hardware-level ID that contains no personal information.
+- No usernames, IP addresses, summoner names, skin selections, or any personally identifiable information are collected or stored.
+- Analytics run on a background thread and have no impact on performance.
+
+You can disable analytics at any time in the Rose **Settings** panel.
+
+<Note>
+  Rose is completely free. If you paid someone for this software, you were scammed. Always download Rose from the [official GitHub releases](https://github.com/Alban1911/Rose/releases/latest).
+</Note>

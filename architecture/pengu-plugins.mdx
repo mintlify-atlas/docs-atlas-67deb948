@@ -1,0 +1,109 @@
+---
+title: "Pengu Loader plugins: JavaScript League Client extensions"
+description: "How Rose's JavaScript plugins are injected into the League Client by Pengu Loader, what each plugin does, and how they communicate with the Python backend."
+---
+
+[Pengu Loader](https://github.com/Tariolle/ROSE-Pengu) is a third-party framework that injects JavaScript modules into the League of Legends Client process at startup. Rose ships a customised build of Pengu Loader alongside ten plugins (located in `Pengu Loader/plugins/`). Each plugin is a self-contained JavaScript module that extends a different part of the League Client UI. Together they form the frontend layer that feeds skin selections and user input to the Python backend, and that renders the Rose-specific UI elements inside the client itself.
+
+## How Pengu Loader integrates with Rose
+
+When Rose starts, it activates `Pengu Loader.exe`. Pengu Loader hooks into the League Client's Chromium renderer process and loads each plugin directory found in `plugins/`. Plugins execute in the renderer context and have access to League Client DOM APIs.
+
+To communicate with the Python backend, plugins connect to the local WebSocket server started by `PenguSkinMonitorThread`. The port is not hard-coded: the Python backend writes the chosen port to a file on disk, and the plugins read it via an HTTP request to the same server before upgrading to WebSocket.
+
+```
+League Client renderer
+  └── Pengu Loader
+        └── Plugin JS
+              └── HTTP GET http://127.0.0.1:{port}/port   (port discovery)
+              └── WebSocket ws://127.0.0.1:{port}          (bidirectional events)
+```
+
+Messages are JSON. The Python backend broadcasts state updates (skin changes, phase transitions, chroma selections, champion lock events) to all connected plugins, and plugins send skin hover events and user actions upstream.
+
+## Plugin reference
+
+<CardGroup cols={2}>
+  <Card title="ROSE-UI" icon="eye">
+    Unlocks locked skin previews in champion select and enables hover interactions on all skins, including skins the player does not own. This is the foundational plugin — without it, the League Client hides unowned skins and the rest of the Rose UI has nothing to act on.
+  </Card>
+  <Card title="ROSE-SkinMonitor" icon="radar">
+    Monitors which skin is currently hovered in champion select and sends its name to the Python backend over WebSocket. This is the primary input channel: the backend reads the skin name, resolves it to a skin archive, and prepares the injection.
+  </Card>
+  <Card title="ROSE-CustomWheel" icon="folder-open">
+    Displays custom mod metadata for hovered skins and exposes a quick-access button that opens the local mods folder. Communicates with the backend to retrieve mod information associated with the currently hovered skin.
+  </Card>
+  <Card title="ROSE-ChromaWheel" icon="palette">
+    Renders an enhanced chroma selection interface that lets users choose any chroma variant for the selected skin. Sends the chosen chroma ID to the backend, which stores it in `SharedState.selected_chroma_id` and passes it to `SkinInjector` at injection time.
+  </Card>
+  <Card title="ROSE-FormsWheel" icon="layers">
+    Shows a form selection wheel for skins that have multiple distinct forms: **Elementalist Lux**, **Sahn Uzal Mordekaiser**, **Spirit Blossom Morgana**, **Radiant Sett**, **KDA Seraphine**, and **Viego**. The selected form path is stored in `SharedState.selected_form_path`.
+  </Card>
+  <Card title="ROSE-SettingsPanel" icon="settings">
+    Adds a **Rose** settings panel inside the League Client, accessible from the standard settings menu. Allows users to adjust Rose behaviour without leaving the client.
+  </Card>
+  <Card title="ROSE-RandomSkin" icon="shuffle">
+    Enables random skin selection for the locked-in champion. When active, the backend sets `SharedState.random_mode_active = True` and picks a random available skin for injection.
+  </Card>
+  <Card title="ROSE-HistoricMode" icon="history">
+    Remembers the last injected unowned skin for each champion across sessions. When historic mode is active, the backend reads `SharedState.historic_skin_id` and re-injects the previously used skin automatically.
+  </Card>
+  <Card title="ROSE-PartyMode" icon="users">
+    Renders a party panel in the lobby and champion select that shows connected friends, their chosen skins, and party join/leave controls. Communicates with the Python backend's party system, which in turn relays data through the `rose-party-relay` Cloudflare Worker.
+  </Card>
+  <Card title="ROSE-Jade" icon="sparkles">
+    Applies client-side cosmetic customisations: regalia borders, loading screen backgrounds, profile banners, summoner icons, account titles, and win/loss statistics. Changes are local to the client and do not affect other players' views.
+  </Card>
+</CardGroup>
+
+## WebSocket message protocol
+
+All messages between plugins and the Python backend are JSON strings. The Python backend broadcasts state updates after any change; plugins subscribe and re-render their UI accordingly.
+
+### Backend → plugin broadcasts
+
+| Event type | Trigger | Key fields |
+|---|---|---|
+| `skin_state` | Skin hover or injection | `skin_name`, `skin_id` |
+| `chroma_state` | Chroma selection changed | `chroma_id` |
+| `phase_change` | LCU phase transition | `phase` |
+| `champion_locked` | Local player locked in | `locked` (bool) |
+| `random_mode_state` | Random mode toggled | `active` (bool) |
+| `historic_state` | Historic mode toggled | `active` (bool), `skin_id` |
+| `custom_mod_state` | Custom mod selected | `mod_name`, `mod_path` |
+| `skip_base_skin` | Base skin detected — skip injection | — |
+
+### Plugin → backend messages
+
+| Event type | Sent by | Purpose |
+|---|---|---|
+| `skin_hover` | `ROSE-SkinMonitor` | Reports the hovered skin name |
+| `chroma_select` | `ROSE-ChromaWheel` | Reports a chosen chroma ID |
+| `form_select` | `ROSE-FormsWheel` | Reports a chosen form file path |
+| `random_toggle` | `ROSE-RandomSkin` | Enables or disables random mode |
+| `historic_toggle` | `ROSE-HistoricMode` | Enables or disables historic mode |
+| `party_action` | `ROSE-PartyMode` | Join, leave, or skin update within a party |
+
+## Plugin directory layout
+
+```
+Pengu Loader/
+├── Pengu Loader.exe
+└── plugins/
+    ├── ROSE-UI/
+    ├── ROSE-SkinMonitor/
+    ├── ROSE-ChromaWheel/
+    ├── ROSE-FormsWheel/
+    ├── ROSE-CustomWheel/
+    ├── ROSE-SettingsPanel/
+    ├── ROSE-RandomSkin/
+    ├── ROSE-HistoricMode/
+    ├── ROSE-PartyMode/
+    └── ROSE-Jade/
+```
+
+Each directory is a self-contained Pengu Loader plugin. Pengu Loader discovers and loads them automatically — no manual registration is required.
+
+<Card title="Back to architecture overview" icon="map" href="/architecture/overview">
+  See how the Pengu plugins fit alongside the Python backend and Cloudflare Workers.
+</Card>

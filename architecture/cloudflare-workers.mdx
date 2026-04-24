@@ -1,0 +1,101 @@
+---
+title: "Cloudflare Workers: party relay and skin key server"
+description: "How Rose uses two Cloudflare Workers — a Durable Object party relay and a runtime skin decryption key server — and the security model around them."
+---
+
+Rose relies on two Cloudflare Workers for functionality that needs to live outside the user's machine: `rose-party-relay`, which brokers real-time WebSocket connections between party members, and `rose-skin-key`, which serves the decryption key used to unlock encrypted skin archives at runtime. Both Workers are serverless and stateless at the edge — no dedicated server to maintain, no fixed region to route to.
+
+<Note>
+  Cloudflare Workers run at Cloudflare's global network edge, meaning requests are handled by the data centre closest to each user. For a skin changer used worldwide, this gives consistently low-latency connections regardless of where friends are located — a property that would be expensive and complex to replicate with a self-hosted server.
+</Note>
+
+## rose-party-relay
+
+`rose-party-relay` (source: `relay-worker/src/`) is a WebSocket relay that lets Rose users share their skin selections with friends in the same lobby in real time. It is built on a **Cloudflare Durable Object** (`PartyRoom` in `relay-worker/src/room.ts`), which gives each party room its own isolated, persistent WebSocket state within the Cloudflare network.
+
+### Room lifecycle
+
+Clients connect by sending a WebSocket upgrade request to:
+
+```
+wss://<worker-url>/room?key=<room_id>
+```
+
+The `key` query parameter is a room identifier between 8 and 64 characters. The Worker derives a Durable Object ID from the key and routes the connection to the correct `PartyRoom` instance. If the room is full (maximum **10 members**), the Worker returns `409 Conflict`.
+
+On connection, the new member immediately receives a `members` message listing everyone already in the room:
+
+```json
+{ "type": "members", "members": [ ... ] }
+```
+
+### Message types
+
+All messages are JSON. The Durable Object broadcasts a fresh `members` snapshot to all connected sockets after every state change.
+
+| Type | Direction | Purpose |
+|---|---|---|
+| `join` | Client → server | Announce identity (`summoner_id`, `summoner_name`) |
+| `skin` | Client → server | Update skin selection (`champion_id`, `skin_id`, `chroma_id`, `skin_name`) |
+| `leave` | Client → server | Voluntarily close connection |
+| `members` | Server → client | Full member list snapshot (broadcast after every change) |
+| `ping` / `pong` | Both | Keepalive — handled automatically by the Durable Object |
+
+### Member data model
+
+Each connected socket stores a `MemberInfo` attachment:
+
+```typescript
+interface MemberInfo {
+  summoner_id: number;
+  summoner_name: string;
+  skin?: {
+    champion_id: number;
+    skin_id: number;
+    chroma_id?: number;
+    skin_name?: string;
+    champion_name?: string;
+  };
+}
+```
+
+When a socket disconnects (normally or on error), its attachment is cleared and the updated member list is broadcast so other clients update their party panels immediately.
+
+### Python-side party protocol
+
+On the Python backend, `party/network/ws_relay.py` manages the WebSocket client connection to `rose-party-relay`. The wire format for P2P messages between Rose clients uses the `PartyCrypto` class (`party/protocol/crypto.py`):
+
+- Each message is encrypted with a **XOR cipher** keyed by a 32-byte random key, prefixed with a 12-byte nonce, and suffixed with a 16-byte keyed checksum.
+- The encryption is intentionally lightweight — it is not intended to be cryptographically strong, but it prevents casual interception of skin selection data in transit through the relay.
+- A shared session key is derived by XOR-combining each peer's key with a mixing step, defined in `derive_shared_key()`.
+
+## rose-skin-key
+
+`rose-skin-key` (source: `skin-key-worker/src/`) is a minimal HTTP Worker that serves the AES decryption key used to unlock the encrypted skin archives stored in the RoseSkin repository. The Python backend fetches this key at injection time via `utils/crypto/key_provider.py`, decrypts the skin archive in memory, extracts the mod files, and immediately wipes the decrypted bytes from disk.
+
+### Skin security model
+
+Skin archives in the RoseSkin repository are stored encrypted. This serves two purposes:
+
+1. The raw asset files are not freely redistributable in decrypted form — encryption adds a layer of friction.
+2. Decrypted files exist only briefly in memory during injection and are wiped after use, reducing the window in which they are accessible on disk.
+
+The key is not embedded in the Rose binary. Instead, it is fetched at runtime from `rose-skin-key`, which means:
+
+- The key can be rotated server-side if needed without requiring a client update.
+- Users running an unmodified Rose binary receive the key automatically.
+
+<Warning>
+  `rose-skin-key` is security-sensitive infrastructure. The Worker is not designed to be self-hosted or forked for personal use. Deploying your own instance would effectively grant anyone with the URL access to the decryption key, undermining the security model entirely. The source is included in the repository for transparency, not as a deployment template.
+</Warning>
+
+## Summary
+
+| Worker | Technology | Purpose |
+|---|---|---|
+| `rose-party-relay` | Durable Object + WebSocket | Real-time skin sharing between party members |
+| `rose-skin-key` | HTTP Worker | Runtime skin decryption key delivery |
+
+<Card title="Back to architecture overview" icon="map" href="/architecture/overview">
+  See how the Cloudflare Workers fit alongside the Python backend and Pengu plugins.
+</Card>
